@@ -1,48 +1,70 @@
 package com.codems.audittrail.config;
 
 import com.codems.audittrail.common.constants.ApplicationConstants;
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Contact;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.StringSchema;
-import io.swagger.v3.oas.models.parameters.HeaderParameter;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
-import io.swagger.v3.oas.models.security.SecurityScheme;
-import org.springdoc.core.customizers.OperationCustomizer;
+import io.swagger.v3.oas.models.parameters.Parameter;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
+
 @Configuration
+@OpenAPIDefinition(
+        info = @Info(
+                title = "AuditTrail API",
+                version = ApplicationConstants.API_VERSION,
+                description = "Activity logging, task management, and security monitoring REST API.",
+                contact = @Contact(name = "DevLab")
+        ),
+        security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+)
+@SecurityScheme(
+        name = OpenApiConfig.BEARER_AUTH,
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT",
+        in = SecuritySchemeIn.HEADER,
+        description = "Provide the JWT access token obtained from /api/auth/login"
+)
 public class OpenApiConfig {
 
     public static final String BEARER_AUTH = "bearerAuth";
 
     @Bean
-    OpenAPI openApi() {
-        SecurityScheme bearer = new SecurityScheme()
-                .type(SecurityScheme.Type.HTTP)
-                .scheme("bearer")
-                .bearerFormat("JWT");
-
-        return new OpenAPI()
-                .info(new Info()
-                        .title("AuditTrail API")
-                        .description("Activity logging and security monitoring API")
-                        .version(ApplicationConstants.API_VERSION))
-                .components(new Components().addSecuritySchemes(BEARER_AUTH, bearer))
-                .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH));
+    OpenApiCustomizer apiVersionHeaderCustomizer() {
+        return openApi -> openApi.getPaths().values().forEach(pathItem ->
+                pathItem.readOperations().forEach(this::addApiVersionHeader)
+        );
     }
 
-    @Bean
-    OperationCustomizer versionHeader() {
-        return (operation, handlerMethod) -> {
-            HeaderParameter header = new HeaderParameter();
-            header.setName(ApplicationConstants.API_VERSION_HEADER);
-            header.setDescription("API version");
-            header.setRequired(false);
-            header.setSchema(new StringSchema()._default(ApplicationConstants.API_VERSION));
-            operation.addParametersItem(header);
-            return operation;
-        };
+    private void addApiVersionHeader(Operation operation) {
+        if (operation.getParameters() == null) {
+            operation.setParameters(new ArrayList<>());
+        }
+
+        boolean alreadyExists = operation.getParameters().stream()
+                .anyMatch(parameter -> ApplicationConstants.API_VERSION_HEADER
+                        .equalsIgnoreCase(parameter.getName()));
+        if (alreadyExists) {
+            return;
+        }
+
+        operation.addParametersItem(new Parameter()
+                .in("header")
+                .name(ApplicationConstants.API_VERSION_HEADER)
+                .required(false)
+                .description("API version header")
+                .schema(new StringSchema()
+                        ._default(ApplicationConstants.API_VERSION)
+                        .example(ApplicationConstants.API_VERSION)));
     }
 }

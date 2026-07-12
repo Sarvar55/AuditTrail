@@ -1,6 +1,6 @@
 package com.codems.audittrail.domain.audit.aspect;
 
-import com.codems.audittrail.common.security.service.CurrentUserService;
+import com.codems.audittrail.common.util.ApplicationUtility;
 import com.codems.audittrail.domain.audit.annotation.Auditable;
 import com.codems.audittrail.domain.audit.service.AuditWriter;
 import com.codems.audittrail.domain.audit.support.ClientIpResolver;
@@ -26,7 +26,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class AuditAspect {
 
     private final AuditWriter auditWriter;
-    private final CurrentUserService currentUserService;
     private final ClientIpResolver clientIpResolver;
     private final SpelExpressionParser expressionParser = new SpelExpressionParser();
     private final DefaultParameterNameDiscoverer parameterNames = new DefaultParameterNameDiscoverer();
@@ -35,8 +34,12 @@ public class AuditAspect {
     @Around("@annotation(auditable)")
     public Object audit(ProceedingJoinPoint joinPoint, Auditable auditable) throws Throwable {
         Object result = joinPoint.proceed();
+        Long userId = 0L;
+        if (ApplicationUtility.getLoggedInUser().isPresent()) {
+            userId = ApplicationUtility.getLoggedInUser().get().id();
+        }
         try {
-            auditWriter.write(currentUserService.getCurrentUserId(), auditable.action(),
+            auditWriter.write(userId, auditable.action(),
                     auditable.resourceType(), resolveResourceId(joinPoint, auditable.resourceId(), result),
                     resolveIpAddress());
         } catch (RuntimeException exception) {

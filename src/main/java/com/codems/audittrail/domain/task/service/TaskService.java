@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.codems.audittrail.domain.audit.annotation.Auditable;
 import com.codems.audittrail.domain.audit.model.AuditAction;
+import com.codems.audittrail.domain.audit.model.AuditResourceType;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -35,14 +36,14 @@ public class TaskService {
     }
 
     @Transactional
-    @Auditable(action=AuditAction.TASK_CREATED, resourceType="TASK", resourceId="#result.id")
+    @Auditable(action = AuditAction.TASK_CREATED, resourceType = AuditResourceType.TASK, resourceId = "#result.id")
     public TaskResponse create(TaskCreateRequest request, Long ownerId) {
         Task task = Task.create(request.title(), request.description(), ownerId);
         return taskMapper.toResponse(taskRepository.save(task));
     }
 
     @Transactional
-    @Auditable(action=AuditAction.TASK_UPDATED, resourceType="TASK", resourceId="#id")
+    @Auditable(action = AuditAction.TASK_UPDATED, resourceType = AuditResourceType.TASK, resourceId = "#id")
     public TaskResponse update(Long id, TaskUpdateRequest request, Long ownerId) {
         Task task = findOwnedTask(id, ownerId);
         task.update(request.title(), request.description());
@@ -50,7 +51,7 @@ public class TaskService {
     }
 
     @Transactional
-    @Auditable(action=AuditAction.TASK_DELETED, resourceType="TASK", resourceId="#id")
+    @Auditable(action = AuditAction.TASK_DELETED, resourceType = AuditResourceType.TASK, resourceId = "#id")
     public void delete(Long id, Long ownerId) {
         Task task = findOwnedTask(id, ownerId);
         taskRepository.delete(task);

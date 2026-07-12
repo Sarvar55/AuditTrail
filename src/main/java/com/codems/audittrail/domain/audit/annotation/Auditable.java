@@ -1,6 +1,7 @@
 package com.codems.audittrail.domain.audit.annotation;
 
 import com.codems.audittrail.domain.audit.model.AuditAction;
+import com.codems.audittrail.domain.audit.model.AuditResourceType;
 
 import java.lang.annotation.*;
 
@@ -10,7 +11,7 @@ import java.lang.annotation.*;
 public @interface Auditable {
     AuditAction action();
 
-    String resourceType();
+    AuditResourceType resourceType();
 
     String resourceId() default "";
 

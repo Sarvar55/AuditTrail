@@ -1,6 +1,7 @@
 package com.codems.audittrail.domain.audit.listener;
 
 import com.codems.audittrail.domain.audit.model.AuditAction;
+import com.codems.audittrail.domain.audit.model.AuditResourceType;
 import com.codems.audittrail.domain.audit.service.AuditWriter;
 import com.codems.audittrail.domain.audit.support.ClientIpResolver;
 import lombok.RequiredArgsConstructor;
@@ -16,15 +17,13 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @RequiredArgsConstructor
 public class AuthenticationAuditListener {
 
-    private final static String AUTHENTICATION = "AUTHENTICATION";
-
     private final AuditWriter auditWriter;
     private final ClientIpResolver clientIpResolver;
 
     @EventListener
     public void onLoginFailure(AbstractAuthenticationFailureEvent event) {
         try {
-            auditWriter.write(null, AuditAction.LOGIN_FAILED, AUTHENTICATION, null, currentIp());
+            auditWriter.write(null, AuditAction.LOGIN_FAILED, AuditResourceType.AUTHENTICATION, null, currentIp());
         } catch (RuntimeException exception) {
             log.error("Failed login attempt could not be audited", exception);
         }

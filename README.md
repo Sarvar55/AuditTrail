@@ -1,99 +1,105 @@
 # AuditTrail API
 
-## Project Overview
-
-Stateless Spring Boot API for user/task operations and append-only admin activity monitoring.
-
-## Architecture
-
-Domain services never access the audit repository; `AuditWriter` is the only write gateway.
-
-```text
-Controller
-    ↓
-Business Service
-    ↓
-@Auditable
-    ↓
-AuditAspect
-    ↓
-AuditWriter
-    ↓
-PostgreSQL
-```
+AuditTrail is a Spring Boot REST API for JWT authentication, user-owned task management, and administrative activity monitoring.
 
 ## Tech Stack
 
-Java 21, Spring Boot Web/Security/AOP/Data JPA, PostgreSQL, Flyway, JWT, Springdoc, Maven, JUnit and Testcontainers.
+- Java 17 and Spring Boot 4
+- Spring Web, Security, AOP, Data JPA, and Validation
+- PostgreSQL and Flyway
+- JWT with JJWT and BCrypt
+- MapStruct, Lombok, and Apache Commons CSV
+- Springdoc OpenAPI
+- Maven and Docker Compose
 
-## Audit Flow
-
-Failures are written immediately with `REQUIRES_NEW`; successes are written after commit. Audit infrastructure errors do not alter business results.
-
-## Authentication Flow
+## Architecture
 
 ```text
-Authentication
-    ↓
-Spring Security Event
-    ↓
-AuthenticationAuditListener
-    ↓
-AuditWriter
+Controller → Service → Repository → PostgreSQL
+                     ↓
+                 @Auditable
+                     ↓
+             AuditAspect → AuditWriter
 ```
 
-## Package Structure
+Task and user services never access the audit repository directly. Audit writes go through `AuditWriter` in a separate transaction.
 
-`domain` contains the audit, auth, task and user modules. Infrastructure is separated into top-level `config`, `security` and `exception` packages. Only reusable base response/entity types and constants remain under `common`. Entity-to-response conversions use MapStruct.
+## API Usage
 
-## Database Setup
+All application endpoints use `/api`. API version `1.0` can be sent with:
 
-Flyway creates users, tasks, audit events, indexes and append-only protection. Recreate development databases made with the previous V3 migration.
+```http
+X-API-Version: 1.0
+Authorization: Bearer <token>
+```
 
-## Running with Docker
+| Method | Path | Access |
+|---|---|---|
+| POST | `/api/auth/register` | Public |
+| POST | `/api/auth/login` | Public |
+| GET, POST | `/api/tasks` | Authenticated |
+| GET, PUT, DELETE | `/api/tasks/{id}` | Authenticated |
+| GET, PUT | `/api/users/me` | Authenticated |
+| PUT | `/api/users/admin/{userId}/role` | ADMIN |
+| GET | `/api/audit-events/admin` | ADMIN |
+| GET | `/api/audit-events/admin/export` | ADMIN |
 
-Run `docker compose up --build`. PostgreSQL uses `localhost:5433`; the API uses `localhost:8080`.
+Audit search supports `actorId`, `actionType`, `resourceType`, `resourceId`, `from`, `to`, pagination, and sorting.
+
+```http
+GET /api/audit-events/admin?actionType=TASK_DELETED&resourceType=TASK&sort=createdAt,desc
+```
+
+Use `sort=field,direction`; do not send sort values as JSON arrays.
+
+## Audit Data
+
+Audit records contain actor ID, action, resource type/ID, IP address, and timestamp. Supported resources are `TASK`, `USER`, and `AUTHENTICATION`. Successful login is not audited; failed login is recorded automatically.
+
+The audit API is read-only. Flyway V5 rejects database `UPDATE` and `DELETE` operations on `audit_events`.
 
 ## Environment Variables
 
-`DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `JWT_SECRET`, `JWT_EXPIRATION`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
+| Variable | Default |
+|---|---|
+| `DATABASE_URL` | `jdbc:postgresql://localhost:5433/audit-trail` |
+| `DATABASE_USERNAME` | `user` |
+| `DATABASE_PASSWORD` | `12345` |
+| `JWT_SECRET` | Development Base64 secret |
+| `JWT_EXPIRATION` | `3600000` |
+| `PORT` | `8080` |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` |
+| `AUDIT_TRAIL_SEED_ENABLED` | `true` |
+| `ADMIN_EMAIL` | `admin@gmail.com` |
+| `ADMIN_PASSWORD` | `admin@@1234!!` |
+| `USER_EMAIL` | `demo@example.com` |
+| `DEMO_PASSWORD` | `password` |
 
-## API Endpoints
+Replace all default credentials and secrets, disable seed users, restrict CORS, and configure trusted proxies before production deployment.
 
-- `POST /api/v1/auth/register`, `POST /api/v1/auth/login`
-- Task CRUD under `/api/v1/tasks`
-- GET-only `/api/v1/audit-events/admin`
-
-## Example Requests
+## Run
 
 ```bash
-curl -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@audittrail.local","password":"change-me-admin-password"}'
+cp .env.example .env.db.dev
+docker compose up --build
 ```
 
-## Audit Search Examples
+API: `http://localhost:8080` — PostgreSQL: `localhost:5433`
 
-`GET /api/v1/audit-events/admin?actionType=TASK_DELETED&from=2026-07-01T00:00:00Z`
+Swagger UI: `http://localhost:8080/swagger-ui.html`
 
-## Append-Only Strategy
+## Tests
 
-The entity has no setters/update method, repository has only insert/read operations, and controller is GET-only. V5 rejects UPDATE/DELETE through a trigger. Apply its commented runtime grants after Flyway with a separate migration owner so migrations retain schema-change rights.
+```bash
+./mvnw test
+./mvnw clean verify
+```
 
-## Security Decisions
+## Important Rules
 
-JWT is stateless. Auth is public; audit requires ADMIN at filter and method levels. Forwarded IP headers are trustworthy only behind a configured trusted proxy.
-
-## Sensitive Data Rules
-
-Audit records contain only actor ID, action, resource, IP address and timestamp. Request bodies, credentials and tokens are never recorded.
-
-## Transaction Strategy
-
-`AuditWriter.write` uses a small independent `REQUIRES_NEW` transaction.
-
-## Testing
-
-Run `./mvnw test`. PostgreSQL-specific repository and append-only tests should use Testcontainers; the lightweight H2 profile disables Flyway.
-
-## Future Improvements
-
-Cryptographic event chaining, retention/archive policies, an outbox, trusted-proxy allowlists and a read replica for large exports.
+- Never log or store plaintext passwords, JWTs, authorization headers, or request bodies.
+- Never expose write or delete endpoints for audit records.
+- Never grant audit table UPDATE, DELETE, or TRUNCATE privileges to the runtime user.
+- Trust forwarded IP headers only behind a trusted reverse proxy.
+- Add new Flyway migrations instead of editing migrations already applied in shared environments.
+- CSV export currently loads matching records into memory; use streaming for large datasets.

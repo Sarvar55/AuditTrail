@@ -3,6 +3,7 @@ package com.codems.audittrail.domain.user.service;
 import com.codems.audittrail.common.exception.type.ResourceNotFoundException;
 import com.codems.audittrail.domain.audit.annotation.Auditable;
 import com.codems.audittrail.domain.audit.model.AuditAction;
+import com.codems.audittrail.domain.audit.model.AuditResourceType;
 import com.codems.audittrail.domain.user.dto.UpdateProfileRequest;
 import com.codems.audittrail.domain.user.dto.UserResponse;
 import com.codems.audittrail.domain.user.mapper.UserMapper;
@@ -22,7 +23,7 @@ public class UserService {
     private final UserMapper userMapper;
 
     @Transactional
-    @Auditable(action = AuditAction.PROFILE_UPDATED, resourceType = "USER", resourceId = "#userId")
+    @Auditable(action = AuditAction.PROFILE_UPDATED, resourceType = AuditResourceType.USER, resourceId = "#userId")
     public UserResponse updateProfile(Long userId, UpdateProfileRequest request) {
         User user = findUser(userId);
         user.updateProfile(request.fullName().trim());
@@ -30,7 +31,7 @@ public class UserService {
     }
 
     @Transactional
-    @Auditable(action = AuditAction.USER_ROLE_CHANGED, resourceType = "USER", resourceId = "#userId")
+    @Auditable(action = AuditAction.USER_ROLE_CHANGED, resourceType = AuditResourceType.USER, resourceId = "#userId")
     public UserResponse changeRole(Long userId, Role role) {
         User user = findUser(userId);
         user.changeRole(role);

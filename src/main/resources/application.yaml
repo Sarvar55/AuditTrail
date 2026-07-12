@@ -43,9 +43,9 @@ app:
     secret: ${JWT_SECRET:dGFzay1ib2FyZC1kZXZlbG9wbWVudC1zZWNyZXQta2V5LWNoYW5nZS1tZS1wbGVhc2UtMzI=}
     expiration: ${JWT_EXPIRATION:3600000}
   admin:
-    name: ${ADMIN_NAME:AuditTrail Admin}
-    email: ${ADMIN_EMAIL:admin@audittrail.local}
-    password: ${ADMIN_PASSWORD:change-me-admin-password}
+    name: ${ADMIN_NAME:admin}
+    email: ${ADMIN_EMAIL:admin@gmail.com}
+    password: ${ADMIN_PASSWORD:admin@@1234!!}
 
   seed:
     enabled: ${AUDIT_TRAIL_SEED_ENABLED:true}
