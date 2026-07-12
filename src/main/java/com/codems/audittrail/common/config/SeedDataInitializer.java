@@ -1,4 +1,4 @@
-package com.codems.audittrail.config;
+package com.codems.audittrail.common.config;
 
 import com.codems.audittrail.domain.user.model.Role;
 import com.codems.audittrail.domain.user.model.User;

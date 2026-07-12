@@ -1,4 +1,4 @@
-package com.codems.audittrail.config;
+package com.codems.audittrail.common.config;
 
 import com.codems.audittrail.common.constants.ApplicationConstants;
 import org.springframework.context.annotation.Configuration;

@@ -1,4 +1,4 @@
-package com.codems.audittrail.config;
+package com.codems.audittrail.common.config;
 
 import java.time.Duration;
 

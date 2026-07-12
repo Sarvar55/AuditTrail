@@ -1,4 +1,4 @@
-package com.codems.audittrail.config;
+package com.codems.audittrail.common.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

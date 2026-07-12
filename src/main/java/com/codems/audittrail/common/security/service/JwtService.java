@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
-import com.codems.audittrail.config.JwtProperties;
+import com.codems.audittrail.common.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;

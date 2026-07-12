@@ -4,7 +4,7 @@ import com.codems.audittrail.common.security.filter.JwtAuthenticationFilter;
 import com.codems.audittrail.common.security.handler.CustomAccessDeniedHandler;
 import com.codems.audittrail.common.security.handler.CustomAuthenticationEntryPoint;
 import com.codems.audittrail.common.security.service.CustomUserDetailsService;
-import com.codems.audittrail.config.CorsProperties;
+import com.codems.audittrail.common.config.CorsProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
